@@ -9,7 +9,7 @@ import java.rmi.server.*;
 public class ViceReaderImpl extends UnicastRemoteObject implements ViceReader {
 
     private static final String AFSDir = "AFSDir/";// dir
-    private File file; // archivo
+    private File file;
     private RandomAccessFile ra_file; // en modo lectura
 
     /* añada los parámetros que requiera */
@@ -17,8 +17,8 @@ public class ViceReaderImpl extends UnicastRemoteObject implements ViceReader {
     public ViceReaderImpl(String fileName, String mode) throws FileNotFoundException, RemoteException {
 
         String full_path = AFSDir + fileName;
+        this.ra_file = new RandomAccessFile(full_path, mode); // y lo abrimos en modo lectura
         this.file = new File(full_path); // sacamos la dir
-        this.ra_file = new RandomAccessFile(full_path + mode); // y lo abrimos en modo lectura
 
     }
 

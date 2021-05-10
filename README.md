@@ -1,3 +1,3 @@
 # Java AFS
 
-RMI JAVA DISTRIBUTED
+Practica tecnologia AFS sistemas distribuidos

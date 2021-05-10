@@ -13,14 +13,14 @@ import java.rmi.server.*;
 public class ViceWriterImpl extends UnicastRemoteObject implements ViceWriter {
 
     private static final String AFSDir = "AFSDir/";// direccion en server
-    private File file; // archivo
+    private File file;
     private RandomAccessFile ra_file; // en escritura
     // constructor
 
     public ViceWriterImpl(final String fileName, String mode) throws RemoteException, FileNotFoundException {
 
         String full_path = AFSDir + fileName; // sacamos la ubicacion del archivo
-        this.file = new File(full_path); // y abrimos el archivo
+        this.file = new File(full_path);
         this.ra_file = new RandomAccessFile(full_path, mode);// en escritura
 
     }

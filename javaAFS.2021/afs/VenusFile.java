@@ -8,24 +8,24 @@ import java.io.*;
 
 public class VenusFile {
 
-    private Vice vice;
     private Venus venus;
     private static final String cache_dir = "Cache/";
     private boolean updated;
-    private String directorio;
     private File f;
     private String mode;
     private int bloq_size;
     private RandomAccessFile ra_file;
+    private String f_name;
 
     public VenusFile(Venus venus, String file_name, String mode)
-            throws RemoteException, IOError, FileNotFoundException {
+            throws RemoteException, IOError, FileNotFoundException, IOException {
 
         String full_path = cache_dir + file_name;
         File file = new File(full_path);
         this.venus = venus;
-        this.bloq_size = venus.getTamBloque();
+        this.bloq_size = venus.getBlocksize();
         this.mode = mode;
+        this.f_name = file_name;
 
         if (!file.exists()) {
             ViceReader vice_reader = venus.getVice().download(file_name, mode);
@@ -36,13 +36,14 @@ public class VenusFile {
              * in chunks of "bloq size" which is an env variable stored in the venus obj
              */
             byte buffer[] = new byte[bloq_size];
-            do {
-                ra_file.write(buffer);
-            } while ((buffer = vice_reader.read(bloq_size)) != null);
+
+            while ((buffer = vice_reader.read(this.bloq_size)) != null) {
+                this.ra_file.write(buffer);
+            }
+
             /* Close random access file and vice reader */
             vice_reader.close();
             this.ra_file.close();
-            return;
         }
 
         this.ra_file = new RandomAccessFile(full_path, mode);
@@ -72,45 +73,34 @@ public class VenusFile {
 
     public void close() throws RemoteException, IOException {
 
-        /* If the file hasn't been updated -> direct close */
-        if (!updated)
-            ra_file.close();
+        if (updated) {
 
-        /* Si se ha esctito en el, proceder al reseteo de punteros */
-        ViceWriter vice_writer = this.venus.getVice().upload(this.f.getName(), this.mode);
-        /* Obtenemos el size y el desplazamiento y ponemos este a 0 */
-        long size = ra_file.length();
-        long offset = ra_file.getFilePointer();
-        this.f.seek(0);
+            /* Si se ha esctito en el, proceder al reseteo de punteros */
+            ViceWriter vice_writer = this.venus.getVice().upload(this.f_name, this.mode);
+            /* Obtenemos el size y el desplazamiento y ponemos este a 0 */
+            this.ra_file.seek(0);
+            long size = ra_file.length();
+            long offset = ra_file.getFilePointer();
 
-        byte[] buffer;
-        int bytes_left;
+            byte[] buffer;
 
-        /* Se lee el fichero completo */
-        while (1) {
-            /* Si se puede leer un bloq_size */
-            if (offset + this.bloq_size <= size) {
+            while (offset + this.bloq_size <= size) {
                 buffer = new byte[this.bloq_size];
                 this.ra_file.read(buffer);
                 vice_writer.write(buffer);
                 offset = this.ra_file.getFilePointer();
-                continue;
             }
 
-            /* Si no hay mas bytes que leer, salimos del bucle */
-            bytes_left = size - offset;
-            if (bytes_left < 1)
-                break;
+            int rest = (int) (size - offset);
+            if (rest > 0) {
+                buffer = new byte[rest];
+                this.ra_file.read(buffer);
+                vice_writer.write(buffer);
+            }
 
-            /* Leemos los ultimos bytes que faltan */
-            buffer = new byte[bytes_left];
-            this.ra_file.read(buffer);
-            vice_writer.write(buffer);
-            offset = this.ra_file.getFilePointer();
-            break;
+            vice_writer.close();
         }
-
-        vice_writer.close();
-        this.ra_file.close();
+        /* If the file hasn't been updated -> direct close */
+        ra_file.close();
     }
 }
